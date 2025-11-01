@@ -234,7 +234,25 @@ def find_best_grouping_variable(all_lotes, min_group_size=1):
                 best_group_b = group_b
     return best_group_a, best_group_b, round(min_total_internal_distance / 1000, 2)
 
-
+def make_api_request(points_list):
+    request_body = {
+        "points": points_list,
+        "vehicle": "car",
+        "locale": "es",
+        "instructions": False,
+        "points_encoded": False,
+        "optimize": "true"
+    }
+    try:
+        response = requests.post(URL_ROUTE, headers=HEADERS, data=json.dumps(request_body))
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.HTTPError as e:
+        return None
+    except requests.exceptions.RequestException as e:
+        return None
+    except KeyError as e:
+        return None
 
 def generate_geojson(route_name, points_sequence, path_coordinates, total_distance_km, vehicle_id):
     features = []
@@ -345,3 +363,4 @@ def solve_route_optimization(all_intermediate_stops):
         return {"error": "Fallo al obtener la Ruta B de la API. (Verifique API Key o límites)"}
 
     return results
+
