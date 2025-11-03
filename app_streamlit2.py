@@ -4,7 +4,7 @@ import pandas as pd
 from datetime import date
 import os
 # 💡 CORRECCIÓN CRUCIAL: Importa el módulo 'routing_logic' (sin el "1")
-from routing_logic import COORDENADAS_LOTES, solve_route_optimization, VEHICLES, COORDENADAS_ORIGEN 
+from routing_logic2 import COORDENADAS_LOTES, solve_route_optimization, VEHICLES, COORDENADAS_ORIGEN 
 
 # =============================================================================
 # CONFIGURACIÓN INICIAL Y ESTILO
@@ -276,6 +276,7 @@ elif page == "Estadísticas":
 
     else:
         st.info("No hay datos en el historial para generar estadísticas.")
+
 
 
 
