@@ -24,6 +24,10 @@ st.markdown("""
 if 'historial_rutas' not in st.session_state:
     st.session_state.historial_rutas = []
 
+# ✅ CORRECCIÓN: Inicializar la clave 'results' que se usa en el reporte.
+if 'results' not in st.session_state:
+    st.session_state.results = None
+
 # =============================================================================
 # ESTRUCTURA DEL MENÚ LATERAL
 # =============================================================================
@@ -241,4 +245,5 @@ elif page == "Estadísticas":
 
     else:
         st.info("No hay datos en el historial para generar estadísticas.")
+
 
