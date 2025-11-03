@@ -10,7 +10,7 @@ from routing_logic2 import COORDENADAS_LOTES, solve_route_optimization, VEHICLES
 # =============================================================================
 
 # Título de la pestaña del navegador y layout
-st.set_page_config(page_title="Optimizador de Rutas", layout="wide")
+st.set_page_config(page_title="Optimizador de Rutas - Seaboard", layout="wide")
 
 # Ocultar menú de Streamlit y footer
 st.markdown("""
