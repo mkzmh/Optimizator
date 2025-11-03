@@ -108,7 +108,7 @@ if page == "Calcular Nueva Ruta":
     st.divider()
     
     # Este botón inicia el cálculo
-    if st.button("🚀 Calcular Rutas Óptimas", key="calc_btn_main", type="primary", disabled=calculate_disabled):
+    if st.button("Calcular Rutas Óptimas", key="calc_btn_main", type="primary", disabled=calculate_disabled):
         
         # Inicialización de resultados en la sesión
         if 'results' not in st.session_state:
@@ -245,6 +245,7 @@ elif page == "Estadísticas":
 
     else:
         st.info("No hay datos en el historial para generar estadísticas.")
+
 
 
 
