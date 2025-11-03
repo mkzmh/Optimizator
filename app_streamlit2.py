@@ -2,15 +2,15 @@ import streamlit as st
 import time 
 import pandas as pd
 from datetime import date
-import os
-# 💡 CORRECCIÓN CRUCIAL: Importa el módulo 'routing_logic' (sin el "1")
+# Importa la lógica y constantes del módulo vecino
 from routing_logic2 import COORDENADAS_LOTES, solve_route_optimization, VEHICLES, COORDENADAS_ORIGEN 
 
 # =============================================================================
 # CONFIGURACIÓN INICIAL Y ESTILO
 # =============================================================================
 
-st.set_page_config(page_title="Optimizador Bimodal de Rutas", layout="wide")
+# Título de la pestaña del navegador y layout
+st.set_page_config(page_title="Optimizador de Rutas - Seaboard", layout="wide")
 
 # Ocultar menú de Streamlit y footer
 st.markdown("""
@@ -20,42 +20,13 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# Define el nombre del archivo de historial para persistencia en CSV
-HISTORIAL_FILE = 'historial_rutas.csv'
+# Inicializar el estado de la sesión para guardar el historial
+if 'historial_rutas' not in st.session_state:
+    st.session_state.historial_rutas = []
 
-# --- FUNCIONES DE PERSISTENCIA EN CSV ---
-
-def load_historial_from_csv():
-    """Carga el historial desde el archivo CSV o inicializa un DataFrame vacío."""
-    if os.path.exists(HISTORIAL_FILE):
-        try:
-            # Lee el CSV. Usamos 'eval' para convertir las listas guardadas como strings de vuelta a listas
-            df = pd.read_csv(HISTORIAL_FILE, converters={'lotes_a': eval, 'lotes_b': eval})
-            return df.to_dict('records')
-        except Exception as e:
-            st.warning(f"Advertencia: No se pudo leer el historial. Se inicia vacío. Error: {e}")
-            pass
-    return []
-
-def save_new_route_to_csv(new_route_data):
-    """Guarda un nuevo registro de ruta en el archivo CSV."""
-    df_actual = pd.DataFrame(st.session_state.historial_rutas)
-    df_new_row = pd.DataFrame([new_route_data])
-    df_combined = pd.concat([df_actual, df_new_row], ignore_index=True)
-    df_combined.to_csv(HISTORIAL_FILE, index=False)
-
-# -------------------------------------------------------------------------
-# INICIALIZACIÓN DE LA SESIÓN
-# -------------------------------------------------------------------------
-
-# Inicializar el estado de la sesión para guardar el historial PERMANENTE
-if 'historial_cargado' not in st.session_state:
-    st.session_state.historial_rutas = load_historial_from_csv()
-    st.session_state.historial_cargado = True 
-
-# Inicializar la clave 'results' (soluciona el AttributeError)
+# ✅ CORRECCIÓN: Inicializar la clave 'results' que se usa en el reporte.
 if 'results' not in st.session_state:
-    st.session_state.results = None 
+    st.session_state.results = None
 
 # =============================================================================
 # ESTRUCTURA DEL MENÚ LATERAL
@@ -74,7 +45,7 @@ st.sidebar.info(f"Rutas Guardadas: {len(st.session_state.historial_rutas)}")
 # =============================================================================
 
 if page == "Calcular Nueva Ruta":
-    st.title("🚚 Optimizator")
+    st.title("🚚 Optimizator📍")
     st.caption("Planificación y división óptima de lotes para vehículos de entrega.")
 
     # --- ENTRADA Y VALIDACIÓN ---
@@ -108,6 +79,7 @@ if page == "Calcular Nueva Ruta":
     with col_map:
         if valid_stops_count > 0:
             st.subheader(f"Mapa de {valid_stops_count} Destinos")
+            # Visualización del mapa
             st.map(map_data, latitude='lat', longitude='lon', color='#0044FF', size=10, zoom=10)
         else:
             st.info("Ingrese lotes válidos para ver la previsualización del mapa.")
@@ -135,20 +107,23 @@ if page == "Calcular Nueva Ruta":
     # -------------------------------------------------------------------------
     st.divider()
     
-    if st.button("🚀 Calcular Rutas Óptimas", key="calc_btn_main", type="primary", disabled=calculate_disabled):
+    # Este botón inicia el cálculo
+    if st.button("Calcular Rutas Óptimas", key="calc_btn_main", type="primary", disabled=calculate_disabled):
         
-        # Guardar el estado de resultados como None si el botón se presiona
-        st.session_state.results = None 
+        # Inicialización de resultados en la sesión
+        if 'results' not in st.session_state:
+            st.session_state.results = None
 
-        with st.spinner('Realizando cálculo óptimo y agrupando rutas (¡75s de espera incluidos!)...'):
+        with st.spinner('Realizando cálculo óptimo y agrupando rutas'):
             try:
                 # LLAMADA A LA LÓGICA DE RUTEADO
                 results = solve_route_optimization(all_stops_to_visit) 
                 
                 if "error" in results:
+                    st.session_state.results = None
                     st.error(f"❌ Error en la API de Ruteo: {results['error']}")
                 else:
-                    # ✅ CREA LA ESTRUCTURA DEL REGISTRO
+                    # GUARDAR EN EL HISTORIAL
                     new_route = {
                         "fecha": date.today().strftime("%Y-%m-%d"),
                         "lotes_ingresados": ", ".join(all_stops_to_visit),
@@ -157,22 +132,20 @@ if page == "Calcular Nueva Ruta":
                         "km_a": results['ruta_a']['distancia_km'],
                         "km_b": results['ruta_b']['distancia_km'],
                     }
-                    
-                    # 🚀 GUARDA PERMANENTEMENTE EN CSV
-                    save_new_route_to_csv(new_route)
-                    
-                    # ACTUALIZA EL ESTADO DE LA SESIÓN
                     st.session_state.historial_rutas.append(new_route)
+                    
                     st.session_state.results = results
                     st.success("✅ Cálculo finalizado y rutas optimizadas.")
                     
             except Exception as e:
+                st.session_state.results = None
                 st.error(f"❌ Ocurrió un error inesperado durante el ruteo: {e}")
                 
     # -------------------------------------------------------------------------
-    # 2. REPORTE DE RESULTADOS UNIFICADO
+    # 2. REPORTE DE RESULTADOS UNIFICADO (Aparece aquí, debajo del botón)
     # -------------------------------------------------------------------------
     
+    # Solo mostramos el reporte si hay resultados guardados en la sesión
     if st.session_state.results:
         results = st.session_state.results
         
@@ -204,6 +177,7 @@ if page == "Calcular Nueva Ruta":
                 st.info(f"**Orden Óptimo:** Ingenio → {' → '.join(res_b.get('orden_optimo', []))} → Ingenio")
                 st.link_button("🌐 Ver Ruta B en GeoJSON.io", res_b.get('geojson_link', '#'))
 
+    # Si no hay resultados y la página carga por primera vez
     else:
         st.info("El reporte aparecerá aquí después de un cálculo exitoso.")
 
@@ -219,25 +193,20 @@ elif page == "Historial":
         df_historial = pd.DataFrame(st.session_state.historial_rutas)
         st.subheader(f"Total de {len(df_historial)} Rutas Guardadas")
         
-        df_display = df_historial.drop(columns=['lotes_ingresados'], errors='ignore')
-
-        st.dataframe(df_display, 
+        st.dataframe(df_historial, 
                      use_container_width=True,
                      column_order=("fecha", "km_a", "km_b", "lotes_a", "lotes_b"),
                      column_config={
-                         "km_a": st.column_config.NumberColumn("KM A", format="%.2f km"),
-                         "km_b": st.column_config.NumberColumn("KM B", format="%.2f km"),
+                         "km_a": st.column_config.NumberColumn("KM Camión A", format="%.2f km"),
+                         "km_b": st.column_config.NumberColumn("KM Camión B", format="%.2f km"),
                          "lotes_a": "Lotes Camión A",
                          "lotes_b": "Lotes Camión B",
                          "fecha": "Fecha"
                      })
         
         st.divider()
-        st.warning("El botón a continuación borrará el historial de la sesión y el archivo CSV permanente.")
-        if st.button("🗑️ Borrar Historial PERMANENTE"):
+        if st.button("🗑️ Borrar Historial"):
             st.session_state.historial_rutas = []
-            if os.path.exists(HISTORIAL_FILE):
-                os.remove(HISTORIAL_FILE)
             st.rerun()
             
 
@@ -276,9 +245,5 @@ elif page == "Estadísticas":
 
     else:
         st.info("No hay datos en el historial para generar estadísticas.")
-
-
-
-
 
 
