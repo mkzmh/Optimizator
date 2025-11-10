@@ -306,6 +306,7 @@ if page == "Calcular Nueva Ruta":
     # 2. REPORTE DE RESULTADOS UNIFICADO
     # -------------------------------------------------------------------------
 
+    # ESTA CONDICIÓN ES CLAVE: SOLO SE MUESTRA SI HAY RESULTADOS
     if st.session_state.results:
         results = st.session_state.results
 
